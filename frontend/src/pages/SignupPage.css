@@ -74,21 +74,22 @@ body, html {
     max-width: 400px;
   }
   
-  h2 {
+  .form-container h2 {
     margin-bottom: 20px;
   }
   
-  form {
+  .form-container form {
     display: flex;
     flex-direction: column;
     gap: 15px;
   }
   
-  input {
+  .form-container input {
     padding: 10px;
     font-size: 16px;
     border: 1px solid #3B3C51;
     border-radius: 5px;
+    margin: 0;
   }
   
   button {

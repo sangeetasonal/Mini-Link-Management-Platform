@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './SignupPage.css';
 import logo from "../assets/logo.png";
+import { Helmet } from 'react-helmet';
 import background from "../assets/background.png"; 
 import { Link, useNavigate } from 'react-router-dom';  // Import useNavigate
 
@@ -70,6 +71,11 @@ const SignupPage = () => {
 
   return (
     <div className="login-page">
+       <Helmet>
+                <link rel="preconnect" href="https://fonts.googleapis.com" />
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+                <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet" />
+            </Helmet>
       <div className="header">
         <Link to="/signup">
           <button className="signup-btn">SignUp</button>

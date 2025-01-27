@@ -79,17 +79,18 @@ body, html {
     margin-bottom: 80px;
   }
   
-  form {
+  .form-container1 form {
     display: flex;
     flex-direction: column;
     gap: 20px;
   }
   
-  input {
+  .form-container1 input {
     padding: 10px;
     font-size: 16px;
     border: 1px solid #3B3C51;
     border-radius: 5px;
+    margin: 0;
   }
   
   button {

@@ -10,10 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@progress/kendo-react-dateinputs": "^9.3.1",
+    "@progress/kendo-theme-default": "^10.1.0",
     "axios": "^1.7.9",
     "cors": "^2.8.5",
     "react": "^18.3.1",
+    "react-datepicker": "^7.6.0",
     "react-dom": "^18.3.1",
+    "react-helmet": "^6.1.0",
     "react-router-dom": "^7.1.3",
     "react-toastify": "^11.0.3"
   },
