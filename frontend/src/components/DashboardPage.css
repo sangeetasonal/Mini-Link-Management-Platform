@@ -60,16 +60,23 @@ body, html {
   .side{
     gap: 5px;
   }
-  .settings {
-    border: 1px solid #F2F2F2;
-    padding: 5px;
-    margin-left: -20px;
-    margin-top: 10px;
-    height: 45px;
-    width: 258px;
-  }
-  
 
+.settings-container{
+  border: 1px solid #F2F2F2;
+  padding: 20px 0 20px 0;
+  margin-left: -20px;
+  margin-top: 15px;
+  width: 259px;
+}
+ 
+.sidebar nav li.settings.active{
+margin-right: 10px;
+margin-left: 20px;
+}
+  
+.sidebar nav li.settings{
+  margin-right:10px ;
+}
 
  .settings img {
     margin-left: 27px;
@@ -197,8 +204,8 @@ body, html {
   
   .logout-btn {
     position: absolute; /* Position the logout button absolutely */
-    top: 45px; /* Adjust this value to position the button below the profile */
-    left: -25px; /* Align the button with the left edge of the profile */
+    top: 40px; /* Adjust this value to position the button below the profile */
+    left: -65px; /* Align the button with the left edge of the profile */
     background-color: #d7d7d7; /* Red color for logout */
     color: white;
     border: none;
@@ -284,17 +291,15 @@ body, html {
     color: #181820;
     font-size: 16px;
     font-weight: 600;
-
+    gap: 30px;
   }
 
   .blue-text {
     color: blue; /* Set the text color to blue */
-    width: 100px; /* Fixed width for alignment */
+    width: 50px; /* Fixed width for alignment */
 }
   
-  .click-stats li span{
-    padding-right: 10px;
-  }
+ 
   .bar {
     flex: 1;
     height: 12px;

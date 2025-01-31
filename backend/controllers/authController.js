@@ -144,10 +144,9 @@ exports.deleteUser = async (req, res) => {
 
 // Function to hash a URL
 const hashLongUrl = (longUrl) => {
-  const hash = crypto.createHash('sha256').update(longUrl).digest('hex');
-  return hash.slice(0, 8); // Generate an 8-character hash
+  const timestamp = Date.now(); // Get the current timestamp
+  return crypto.createHash('sha256').update(longUrl + timestamp).digest('hex').slice(0, 8); // Generate a hash
 };
-
 
 
 // Create a short URL
@@ -166,21 +165,11 @@ const hashLongUrl = (longUrl) => {
   }
 
   try {
-    const hashedUrl = hashLongUrl(longUrl);
+    const hashedUrl = hashLongUrl(longUrl); // Generate a unique hash for the URL
     const shortUrl = `${req.protocol}://${req.get("host")}/${hashedUrl}`; // Full clickable link
 
-    // Check if a short URL already exists
-    let url = await Url.findOne({ shortUrl: hashedUrl });
-    if (url) {
-      return res.status(200).json({
-        message: 'Short URL already exists',
-        shortUrl: url.shortUrl,
-        longUrl: url.longUrl,
-        remarks: url.remarks,
-        createdAt: url.createdAt,
-        status: url.status,
-      });
-    }
+    // Remove the check for existing short URL
+    // This allows the creation of a new short URL even if the original link is the same
 
     const status = expirationDate && new Date(expirationDate) < new Date() ? 'Inactive' : 'Active';
 
@@ -371,3 +360,4 @@ exports.getActiveClickData = async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+

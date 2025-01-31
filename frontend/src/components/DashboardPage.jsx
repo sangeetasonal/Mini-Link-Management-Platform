@@ -478,45 +478,70 @@ const handleSearch = (e) => {
       link.remarks.toLowerCase().includes(query)
     );
 
-    setFilteredLinks(results);
+    setFilteredLinks(results); // Set filtered links to the results
 
-    if (results.length === 0) {
-      alert("No remarks found");
+    // Only show alert when Enter is pressed
+    if (e.key === 'Enter') {
+      if (results.length > 0) {
+        setActiveMenu("links"); // Set the active menu to "links"
+        // Optionally, you can navigate to the links page if needed
+      } else {
+        alert("No remarks found");
+      }
     }
   } else {
     setFilteredLinks(links); // Reset to original links if search is cleared
   }
 };
 
-
-// Fetch URLs when the component mounts or when the active menu changes
 useEffect(() => {
-  const fetchUrls = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.log("No token found in localStorage");
-        return;
-      }
+  const fetchLinks = async () => {
+    const token = localStorage.getItem('token');
+    const response = await axios.get('http://localhost:5000/api/auth/all', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-      const response = await axios.get(`http://localhost:5000/api/auth/all`, {
-        headers: { Authorization: `Bearer ${token}` },
+    if (response.status === 200) {
+      const allLinks = response.data.urls; // Assuming the API returns an array of URLs
+      setLinks(allLinks);
+
+      // Calculate total clicks
+      const total = allLinks.reduce((sum, url) => sum + url.clicks, 0);
+      setTotalClicks(total); // Set total clicks
+
+      // Calculate clicks by device
+      const deviceCounts = {
+        mobile: 0,
+        desktop: 0,
+        tablet: 0,
+      };
+
+      allLinks.forEach(link => {
+        // Assuming you have a way to track device clicks in your link data
+        // This is just a placeholder; you may need to adjust based on your data structure
+        if (link.device === 'Android' || link.device === 'iOS') {
+          deviceCounts.mobile += link.clicks;
+        } else if (link.device === 'Windows' || link.device === 'MacOS') {
+          deviceCounts.desktop += link.clicks;
+        } else if (link.device === 'Tablet') {
+          deviceCounts.tablet += link.clicks;
+        }
       });
 
-      if (response.status === 200) {
-        setUrls(response.data.urls); // Assuming the API returns an array of URLs
-        
-        // Calculate total clicks
-        const total = response.data.urls.reduce((sum, url) => sum + url.clicks, 0);
-        setTotalClicks(total); // Set total clicks
-      }
-    } catch (error) {
-      console.error('Error fetching URLs:', error);
+      setClicksByDevice(deviceCounts);
+
+      // Calculate clicks by date
+      const dateCounts = {};
+      allLinks.forEach(link => {
+        const date = new Date(link.createdAt).toLocaleDateString('en-US');
+        dateCounts[date] = (dateCounts[date] || 0) + link.clicks;
+      });
+      setClicksByDate(dateCounts);
     }
   };
 
   if (activeMenu === "dashboard") {
-    fetchUrls(); // Fetch URLs when the "dashboard" menu is active
+    fetchLinks(); // Fetch links when the "dashboard" menu is active
   }
 }, [activeMenu]);
 
@@ -559,13 +584,15 @@ useEffect(() => {
               <img src={activeMenu === "analytics" ? analyticBlue : analytic} alt="Analytics Icon" />
               Analytics
             </li>
-           <li
-  className={`settings ${activeMenu === "settings" ? "active" : ""}`}
-  onClick={() => setActiveMenu("settings")}
->
-  <img src={activeMenu === "settings" ? settingBlue : setting} alt="Settings Icon" />
-  Settings
-</li>
+            <div className="settings-container">
+        <li
+          className={`settings ${activeMenu === "settings" ? "active" : ""}`}
+          onClick={() => setActiveMenu("settings")}
+        >
+          <img src={activeMenu === "settings" ? settingBlue : setting} alt="Settings Icon" />
+          Settings
+        </li>
+      </div>
           </ul>
         </nav>
       </div>
@@ -592,6 +619,7 @@ useEffect(() => {
     placeholder="Search by remarks" 
     value={searchQuery}
     onChange={(e) => handleSearch(e)} // Call handleSearch on input change
+    onKeyDown={(e) => handleSearch(e)} // Call handleSearch on key down
   />
 </div>
             <div className="profile-container" ref={profileRef}>
@@ -688,74 +716,74 @@ useEffect(() => {
 
         
             {/* Dynamic Content */}
-            {activeMenu === "dashboard" && (
-        <div className="dashboard-content">
-          <h2>
-            <span className="total-clicks-label">Total Clicks </span>
-            <span className="total-clicks-value">{totalClicks}</span>
-          </h2>    
-          <div className="stats">
-            {/* Date-wise Clicks */}
-            <div className="card">
-              <h3>Date-wise Clicks</h3>
-              {totalClicks > 0 ? (
-                <ul className="click-stats">
-                  {Object.entries(clicksByDate).length > 0 ? (
-                    Object.entries(clicksByDate).map(([date, count]) => (
-                      <li key={date}>
-                        <span>{date}</span>
-                        <div className="bar">
-                          <div className="fill" style={{ width: `${(count / totalClicks) * 100}%` }}></div>
-                        </div>
-                        <span className="blue-text">{count}</span>
+             {/* Dynamic Content */}
+        {activeMenu === "dashboard" && (
+          <div className="dashboard-content">
+            <h2>
+              <span className="total-clicks-label">Total Clicks </span>
+              <span className="total-clicks-value">{totalClicks}</span>
+            </h2>    
+            <div className="stats">
+              {/* Date-wise Clicks */}
+              <div className="card">
+                <h3>Date-wise Clicks</h3>
+                {totalClicks > 0 ? (
+                  <ul className="click-stats">
+                    {Object.entries(clicksByDate).length > 0 ? (
+                      Object.entries(clicksByDate).map(([date, count]) => (
+                        <li key={date}>
+                          <span>{date}</span>
+                          <div className="bar">
+                            <div className="fill" style={{ width: `${(count / totalClicks) * 100}%` }}></div>
+                          </div>
+                          <span className="blue-text">{count}</span>
+                        </li>
+                      ))
+                    ) : (
+                      <li>
+                        <span>No records found</span>
                       </li>
-                    ))
-                  ) : (
-                    <li>
-                      <span>No records found</span>
-                    </li>
-                  )}
-                </ul>
-              ) : (
-                <p>No clicks recorded</p>
-              )}
-            </div>
+                    )}
+                  </ul>
+                ) : (
+                  <p>No clicks recorded</p>
+                )}
+              </div>
 
-            {/* Click Devices */}
-            <div className="card">
-              <h3>Click Devices</h3>
-              {totalClicks > 0 ? (
-                <ul className="click-stats">
-                  <li>
-                    <span>Mobile</span>
-                    <div className="bar">
-                      <div className="fill" style={{ width: `${(clicksByDevice.mobile / totalClicks) * 100}%` }}></div>
-                    </div>
-                    <span className="blue-text">{clicksByDevice.mobile}</span>
-                  </li>
-                  <li>
-                    <span>Desktop</span>
-                    <div className="bar">
-                      <div className="fill" style={{ width: `${(clicksByDevice.desktop / totalClicks) * 100}%` }}></div>
-                    </div>
-                    <span className="blue-text">{clicksByDevice.desktop}</span>
-                  </li>
-                  <li>
-                    <span>Tablet</span>
-                    <div className="bar">
-                      <div className="fill" style={{ width: `${(clicksByDevice.tablet / totalClicks) * 100}%` }}></div>
-                    </div>
-                    <span className="blue-text">{clicksByDevice.tablet}</span>
-                  </li>
-                </ul>
-              ) : (
-                <p>No clicks recorded for any device</p>              
-              )}
+              {/* Click Devices */}
+              <div className="card">
+                <h3>Click Devices</h3>
+                {totalClicks > 0 ? (
+                  <ul className="click-stats">
+                    <li>
+                      <span>Mobile</span>
+                      <div className="bar">
+                        <div className="fill" style={{ width: `${(clicksByDevice.mobile / totalClicks) * 100}%` }}></div>
+                      </div>
+                      <span className="blue-text">{clicksByDevice.mobile}</span>
+                    </li>
+                    <li>
+                      <span>Desktop</span>
+                      <div className="bar">
+                        <div className="fill" style={{ width: `${(clicksByDevice.desktop / totalClicks) * 100}%` }}></div>
+                      </div>
+                      <span className="blue-text">{clicksByDevice.desktop}</span>
+                    </li>
+                    <li>
+                      <span>Tablet</span>
+                      <div className="bar">
+                        <div className="fill" style={{ width: `${(clicksByDevice.tablet / totalClicks) * 100}%` }}></div>
+                      </div>
+                      <span className="blue-text">{clicksByDevice.tablet}</span>
+                    </li>
+                  </ul>
+                ) : (
+                  <p>No clicks recorded for any device</p>              
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
-      
+        )}
 
 {activeMenu === "links" && (
   <div className="links-content">
