@@ -89,7 +89,7 @@ body, html {
   }
 
   .greeting {
-    font-size: 14px;
+    font-size: 16px;
     margin-top: -6px;
 
   }
@@ -163,7 +163,7 @@ body, html {
   
 
   
-  .profile {
+  /* .profile {
     width: 40px;
     height: 40px;
    color: #923E0E;
@@ -173,8 +173,45 @@ body, html {
     align-items: center;
     justify-content: center;
     font-weight: bold;
+  } */
+  
+  .profile-container {
+    position: relative; /* Position relative to allow absolute positioning of the logout button */
+    display: flex;
+    align-items: center; /* Center the profile icon vertically */
   }
   
+  .profile {
+    width: 40px;
+    height: 40px;
+    color: #923E0E;
+    background-color: #FDE48A;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    cursor: pointer; /* Change cursor to pointer to indicate it's clickable */
+    margin-right: 10px; /* Space between profile and button */
+  }
+  
+  .logout-btn {
+    position: absolute; /* Position the logout button absolutely */
+    top: 45px; /* Adjust this value to position the button below the profile */
+    left: -25px; /* Align the button with the left edge of the profile */
+    background-color: #d7d7d7; /* Red color for logout */
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    z-index: 10; /* Ensure the button appears above other content */
+  }
+  
+  .logout-btn:hover {
+    background-color: #000000; /* Darker red on hover */
+  }
   /* Dashboard Content */
   .dashboard-content {
     flex: 1; /* Take remaining height */
@@ -187,19 +224,24 @@ body, html {
     box-sizing: border-box;
 }
   
-  
+
+
   .dashboard-content h2 {
     font-size: 20px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
     margin-top: 30px;
     margin-left: 19px;
     color: #181820;
+    gap: 30px;
   }
   
-  .dashboard-content h2 span {
-    color: #007bff;
+  .total-clicks-label {
+    color: black;
+  }
+  
+  .total-clicks-value {
+    color: #1B48DA;
   }
   
   .stats {
@@ -223,6 +265,12 @@ body, html {
     color: #1B48DA;
   }
   
+  .card p {
+    margin-top: 10px;
+    text-align: center;
+        font-size: 13px;
+    font-weight: 800;
+  }
   .click-stats {
     list-style: none;
     padding: 0;
@@ -445,12 +493,127 @@ form textarea {
 }
 
 /* .........link.......... */
-.links-content{
+
+/* Table Wrapper */
+.table-wrapper {
+  margin-top: 20px;
+  overflow-x: auto; /* Enable horizontal scrolling for overflow */
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background: #fff;
+}
+
+/* Table Styles */
+table.links-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Manrope', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  table-layout: fixed; /* Ensure columns have consistent widths */
+}
+
+/* Table Header */
+table.links-table th {
+ 
+  border-bottom: 2px solid #eaeaea;
+  white-space: nowrap;
+}
+
+/* Table Rows */
+table.links-table td {
+  padding: 7px 16px;
+  border-bottom: 1px solid #eaeaea;
+  vertical-align: middle;
+
+}
+
+table.links-table td:nth-child(2) {
+  padding-right: 0; /* Remove right padding for the Original Link column */
+  max-width: 200px; /* Set a maximum width for truncating long links */
+}
+
+table.links-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Short Link Cell */
+/* .short-link-cell {
+  display: flex;
+  align-items: center;
+} */
+
+/* Copy Button */
+.copy-btn {
+  background-color: transparent;
+  border: none;
+  border-radius: 50%;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin: 0;
+}
+
+.copy-btn:hover {
+  background-color: #d4d4d4;
+}
+
+/* Status Styles */
+.status-active {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.status-inactive {
+  color: #e67e22;
+  font-weight: 600;
+}
+
+/* Action Buttons */
+.edit-btn,
+.delete-btn {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  margin-left: 5px;
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 50px;
+  transition: background-color 0.2s ease;
+}
+
+
+.delete-btn:hover {
+  background-color: #d4d4d4;
+}
+.edit-btn:hover{
+  background-color: #d4d4d4;
+}
+
+
+
+
+/* Links Content Background */
+.links-content {
   background-color: #F2F2F2;
   height: 100vh;
-}
-.links-content {
   padding: 20px;
+  overflow: hidden; /* Prevent scrolling of the entire content */
+
+}
+
+.scrollable-links {
+  max-height: calc(100vh - 140px); /* Adjust based on your layout */
+  overflow-y: auto; /* Enable vertical scrolling */
+  border-radius: 12px;
+  border-radius: 12px; /* Rounded corners */
+  box-shadow: 0 6px 9px rgb(0 0 0 / 23%); /* Shadow effect */
+}
+
+/* Hide scrollbar for WebKit browsers */
+.scrollable-links::-webkit-scrollbar {
+  width: 0; /* Hide scrollbar */
+  background: transparent; /* Optional: make background transparent */
 }
 
 .links-content h2 {
@@ -458,90 +621,269 @@ form textarea {
   margin-bottom: 10px;
 }
 
-.links-table tbody tr td {
-  background-color: white;
-  border-right: 2px solid #F8F8F8;
-
-}
-.links-table thead tr th {
-  background-color: #F3F7FD; /* Optional: Set a different background color for the header */
-  color: #3B3C51; /* Set text color for better readability */
-  height: 35px;
-  padding: 10px 30px 10px 30px;
-  text-align: left;
-  
-
-}
-
-.links-content p {
-  margin-bottom: 20px;
-}
-
+/* Ensure Table Fits the Screen */
 .links-table {
-  width: 100%;
-  border-collapse: collapse;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
-
-.links-table td {
-  text-align: left;
+.links-table thead th {
+  background-color: #F3F7FD;
+  color: #3B3C51;
   padding: 10px 0px 10px 30px;
-  border-bottom: 2px solid #F8F8F8;
+  text-align: left;
+  height: 40px;
+  font-size: 16px;
 }
 
-.links-table th {
-  background-color: #f4f4f4;
-  font-weight: bold;
+.links-table tbody td {
+  background-color: #fff;
+  border-right: 1px solid #F8F8F8;
 }
 
-.links-table tr:last-child td {
+.links-table tbody tr:last-child td {
   border-bottom: none;
 }
 
-.copy-btn,
-.edit-btn,
-.delete-btn {
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-size: 1rem;
-  margin-left: 5px;
-  padding: 0;
+/* Truncate Original Link */
+.links-table td:nth-child(2) {
+  max-width: 200px; /* Adjust as needed */
+  text-overflow: ellipsis; /* Add ellipsis for truncated text */
+  overflow: hidden; /* Hide overflowing content */
+  white-space: nowrap; /* Prevent wrapping */
 }
 
-.copy-btn:hover {
-  color: #007bff;
-}
-
-.edit-btn:hover {
-  color: #28a745;
-}
-
-.delete-btn:hover {
-  color: #dc3545;
-}
-
-.status-active {
-  color: green;
-}
-
-.status-inactive {
-  color: orange;
+/* Scrollable Table */
+.table-wrapper {
+  display: block; /* Ensure wrapper is a block element */
+  overflow-x: auto; /* Add horizontal scrolling for overflow */
 }
 
 
+
+/* Table Styles */
+table.links-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Manrope', sans-serif;
+  font-size: 14px;
+  table-layout: fixed; /* Ensure columns have consistent widths */
+}
+
+/* Table Header */
+
+
+
+
+/* Short Link Cell */
 .short-link-cell {
-  display: flex; /* Enable flexbox */
-  align-items: center;
+
+  white-space: nowrap; /* Prevent wrapping */
 }
 
 
-td button {
-  margin-right: 10px; /* Add spacing between buttons */
+.links-table td:nth-child(1) {
+ padding: 0px 6px 0px 14px; 
 }
+/* Set fixed widths for each column */
+.links-table th:nth-child(1),
+.links-table td:nth-child(1) {
+  width: 120px; /* Adjust width as needed */
+}
+
+.links-table th:nth-child(2),
+.links-table td:nth-child(2) {
+  width: 125px; /* Width for Original Link */
+}
+
+.links-table th:nth-child(3) {
+  width: 140px; /* Width for Short Link */
+}
+
+.links-table th:nth-child(4),
+.links-table td:nth-child(4) {
+  width: 150px; /* Width for Remarks */
+}
+
+.links-table th:nth-child(5),
+.links-table td:nth-child(5) {
+  width: 80px; /* Width for Clicks */
+}
+
+.links-table th:nth-child(6),
+.links-table td:nth-child(6) {
+  width: 90px; /* Width for Status */
+  text-align: center; /* Center align the cell */
+}
+
+.links-table th:nth-child(7),
+.links-table td:nth-child(7) {
+  width: 100px; /* Width for Action */
+}
+
+/* Optional: Ensure all cells have the same height */
+.links-table tr {
+  height: 50px; /* Set a fixed height for rows */
+}
+.links-table td:nth-child(6) {
+  text-align: center; /* Center align the cell */
+}
+
+.links-table td:nth-child(3) {
+  text-align: center; /* Center align the cell */
+}
+.links-table td:nth-child(5) {
+  padding-left: 25px;
+}
+
+
+.pagination{
+  display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 10px;
+      gap: 15px;
+}
+
+.pagination span{
+  font-size: 14px;
+  font-weight: 600;
+}
+.pagination button {
+  background-color: #1b48da;
+  border: none;; /* Default button color */
+  border: none; /* Remove border */
+  border-radius: 5px; /* Rounded corners */
+  padding: 4px 8px 4px 8px; /* Padding */
+  cursor: pointer; /* Pointer cursor */
+  transition: background-color 0.3s; /* Transition for hover effect */
+}
+
+.pagination button.disabled {
+  background-color: grey; /* Grey color for disabled state */
+  cursor: not-allowed; /* Change cursor to indicate disabled */
+  opacity: 0.6; /* Slightly transparent */
+}
+
+.pagination button:hover:not(.disabled) {
+  background-color: #0056b3; /* Darker blue on hover */
+}
+
+
+
+/* analytics */
+.analytics-content {
+  background-color: #F2F2F2;
+  height: 100vh;
+  padding: 20px;
+  overflow: hidden;
+}
+
+.analytics-content h2 {
+  font-size: 24px;
+  margin-bottom: 20px;
+  color: #3B3C51;
+}
+
+.analytics-content table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.analytics-content th, .analytics-content td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #F8F8F8;
+  height: 35px;
+  background-color: #fff;
+  border-right: 1px solid #F8F8F8;
+  font-size: 14px;
+    font-weight: 500;
+}
+
+.analytics-content th {
+  background-color: #F3F7FD;
+  color: #3B3C51;
+  padding: 11px 0px 11px 30px;
+  text-align: left;
+  height: 40px;
+  font-size: 16px;
+  border-bottom: 2px solid #dfdfdf;
+  font-weight: 700;
+}
+
+
+.analytics-content td
+{
+  padding: 10px 0px 10px 16px;
+  overflow: hidden;
+  max-width: 200px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+th:nth-child(1) {
+  width: 15%; /* Width for Date */
+}
+
+th:nth-child(2) {
+  max-width: 200px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap; /* Width for Original Link */
+}
+
+th:nth-child(3) {
+  width: 30%; /* Width for Short Link */
+}
+
+th:nth-child(4) {
+  width: 15%; /* Width for IP Address */
+}
+
+th:nth-child(5) {
+  width: 12%; /* Width for Device */
+}
+.analytics-content .blue-text {
+  color: #007bff; /* Blue color for click counts */
+  font-weight: bold;
+}
+
+.analytics-content .button-groups {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.analytics-content .button-groups button {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.analytics-content .button-groups .yes {
+  background-color: #d9534f; /* Red for delete confirmation */
+  color: white;
+}
+
+.analytics-content .button-groups .no {
+  background-color: #5bc0de; /* Blue for cancel */
+  color: white;
+}
+
+.analytics-content .button-groups .yes:hover {
+  background-color: #c9302c; /* Darker red on hover */
+}
+
+.analytics-content .button-groups .no:hover {
+  background-color: #31b0d5; /* Darker blue on hover */
+}
+
+
 /* ProfileSettings.css */
 
 .sett {

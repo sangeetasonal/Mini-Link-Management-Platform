@@ -6,7 +6,12 @@ const UrlSchema = new mongoose.Schema({
   remarks: { type: String },
   expirationEnabled: { type: Boolean, default: false },
   expirationDate: { type: Date },
+  createdAt: { type: Date, default: Date.now }, // Automatically set to current date
   status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' }, // Track link status
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User ', required: true }, // Reference to User
+  clicks: { type: Number, default: 0 }, // Add clicks field
+  ipAddress: { type: String, default: 'Not opened' }, // Optional: Default value
+  device: { type: String, default: 'Not opened' } // Optional: Default value
 });
 
 module.exports = mongoose.model('Url', UrlSchema);

@@ -1,10 +1,9 @@
 const User = require('../models/User');
 const Url = require("../models/Url");
 const crypto = require("crypto"); // Import the crypto module for generating IDs
-
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
+const Click = require('../models/Click');
 // Signup function
 exports.signup = async (req, res) => {
   const { name, email, mobile, password } = req.body;
@@ -149,10 +148,18 @@ const hashLongUrl = (longUrl) => {
   return hash.slice(0, 8); // Generate an 8-character hash
 };
 
+
+
 // Create a short URL
-// Create a short URL
-exports.createShortUrl = async (req, res) => {
+ // Create a short URL
+ exports.createShortUrl = async (req, res) => {
+  console.log("User  ID from request:", req.user?.userId); // Debug log
+
   const { longUrl, remarks, expirationDate } = req.body;
+  const userId = req.user?.userId; // Get userId from the authenticated request
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized: User ID missing" });
+  }
 
   if (!longUrl) {
     return res.status(400).json({ message: 'Long URL is required' });
@@ -160,45 +167,43 @@ exports.createShortUrl = async (req, res) => {
 
   try {
     const hashedUrl = hashLongUrl(longUrl);
+    const shortUrl = `${req.protocol}://${req.get("host")}/${hashedUrl}`; // Full clickable link
 
-    // Check if the short URL already exists
+    // Check if a short URL already exists
     let url = await Url.findOne({ shortUrl: hashedUrl });
     if (url) {
-      // Calculate the status dynamically
-      const currentTime = new Date();
-      const status = url.expirationEnabled && url.expirationDate && currentTime > url.expirationDate ? 'Inactive' : 'Active';
-
-      // Return the existing URL along with remarks and status
       return res.status(200).json({
         message: 'Short URL already exists',
-        shortUrl: `${req.protocol}://${req.get('host')}/${hashedUrl}`,
+        shortUrl: url.shortUrl,
         longUrl: url.longUrl,
-        remarks,
-        status, // Include the current status
+        remarks: url.remarks,
+        createdAt: url.createdAt,
+        status: url.status,
       });
     }
 
-    // Determine the initial status based on expiration
-    const currentTime = new Date();
-    const status = expirationDate && new Date(expirationDate) < currentTime ? 'Inactive' : 'Active';
+    const status = expirationDate && new Date(expirationDate) < new Date() ? 'Inactive' : 'Active';
 
-    // Create a new URL document
+    // Create a new URL document with userId
     const newShortUrl = new Url({
       longUrl,
-      shortUrl: hashedUrl,
+      shortUrl,
       remarks,
       expirationEnabled: !!expirationDate,
       expirationDate,
+      createdAt: new Date(),
       status,
+      userId // Associate the URL with the user
     });
 
     await newShortUrl.save();
 
     res.status(201).json({
       message: 'Short URL created successfully',
-      shortUrl: `${req.protocol}://${req.get('host')}/${hashedUrl}`,
+      shortUrl,
       longUrl,
       remarks,
+      createdAt: newShortUrl.createdAt,
       status,
     });
   } catch (err) {
@@ -208,33 +213,161 @@ exports.createShortUrl = async (req, res) => {
 };
 
 // Handle redirection
+// Handle redirection
 exports.handleRedirect = async (req, res) => {
   const { shortId } = req.params;
+  const shortUrl = `${req.protocol}://${req.get("host")}/${shortId}`;
 
   try {
-    const url = await Url.findOne({ shortUrl: shortId });
+    const url = await Url.findOne({ shortUrl });
 
     if (!url) {
       return res.status(404).json({ message: 'Short URL not found' });
     }
 
-    // Check if the link is expired
-    const currentTime = new Date();
-    if (url.expirationEnabled && url.expirationDate && currentTime > new Date(url.expirationDate)) {
-      url.status = 'Inactive';  // Set status as Inactive when expired
-      await url.save();
+    // Increment the click count
+    url.clicks += 1;
 
-      return res.status(410).json({
-        message: 'This link has expired',
-        status: url.status, // Include status (Inactive)
-        remarks: url.remarks, // Include remarks
-      });
-    }
+    // Store IP address and device information
+    const ipAddress = req.ip;
+    const userAgent = req.headers['user-agent'];
+    const device = getDevice(userAgent);
 
-    // If not expired, redirect to the original URL
+    // Log the IP address and device information
+    console.log(`IP Address: ${ipAddress}`); // Log the IP address
+    console.log(`Device: ${device}`); // Log the device information
+    // Update the URL document with IP address and device
+    url.ipAddress = ipAddress; // Update IP address
+    url.device = device; // Update device
+
+    // Save the updated URL document
+    await url.save();
+
+    console.log(`URL opened: ${url.longUrl}, Device: ${device}, IP: ${ipAddress}`);
+
     res.redirect(url.longUrl);
   } catch (err) {
-    console.error('Error handling redirection:', err.message);
+    console.error('Error during redirection:', err.message);
     res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+// Function to get device from user agent
+function getDevice(userAgent) {
+  if (userAgent.includes('Android')) return 'Android';
+  if (userAgent.includes('iPhone') || userAgent.includes('iPad')) return 'iOS';
+  if (userAgent.includes('Windows')) return 'Windows';
+  if (userAgent.includes('Macintosh')) return 'MacOS';
+  if (userAgent.includes('Linux')) return 'Linux';
+  return 'Unknown'; // Default case if no match is found
+}
+// Fetch all URLs created by the authenticated user with pagination
+exports.getUserUrls = async (req, res) => {
+  const userId = req.user?.userId; // Extract userId from the token in authMiddleware
+  const page = parseInt(req.query.page) || 1; // Current page number
+  const limit = 10; // Items per page
+  const offset = (page - 1) * limit; // Calculate offset
+
+  try {
+    // Retrieve URLs created by the user with pagination
+    const urls = await Url.find({ userId })
+      .sort({ createdAt: -1 }) // Sort by creation date
+      .skip(offset) // Skip the previous pages
+      .limit(limit); // Limit the number of results
+
+    const totalUrls = await Url.countDocuments({ userId }); // Get total count of URLs
+
+    if (!urls.length) {
+      return res.status(404).json({ message: "No URLs found for this user" });
+    }
+
+    res.status(200).json({
+      message: "Fetched all URLs successfully",
+      urls, // Returning the paginated URLs created by the user
+      totalUrls, // Total number of URLs for pagination
+      totalPages: Math.ceil(totalUrls / limit), // Total number of pages
+      currentPage: page, // Current page number
+    });
+  } catch (err) {
+    console.error("Error fetching URLs:", err.message);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Delete a short URL
+exports.deleteShortUrl = async (req, res) => {
+  const userId = req.user?.userId; // Get userId from the authenticated request
+  const { urlId } = req.params; // Get the URL ID from the request parameters
+
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized: User ID missing" });
+  }
+
+  try {
+    // Find the URL by ID and ensure it belongs to the user
+    const url = await Url.findOneAndDelete({ _id: urlId, userId });
+
+    if (!url) {
+      return res.status(404).json({ message: "URL not found or you do not have permission to delete it" });
+    }
+
+    res.status(200).json({ message: "Short URL deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting URL:", err.message);
+    res.status(500).json({ message: "Error deleting URL", error: err.message });
+  }
+};
+
+
+
+
+// Fetch click data for the authenticated user
+exports.getActiveClickData = async (req, res) => {
+  const userId = req.user?.userId; // Extract userId from the token in authMiddleware
+  const page = parseInt(req.query.page) || 1; // Current page number
+  const limit = 10; // Items per page
+  const offset = (page - 1) * limit; // Calculate offset
+
+  console.log("User   ID:", userId); // Log the user ID
+
+  try {
+    // Find all URLs associated with the user
+    const urls = await Url.find({ userId })
+      .skip(offset) // Skip the previous pages for URLs
+      .limit(limit) // Limit the number of results for URLs
+      .sort({ createdAt: -1 }); // Sort by creation date
+
+
+      
+    // Create the response array
+    const responseUrls = urls.map(url => {
+      return {
+        longUrl: url.longUrl,
+        shortUrl: url.shortUrl,
+        ipAddress: url.clicks > 0 ? url.ipAddress : 'Not opened', // Set to 'Not opened' if no clicks
+        device: url.clicks > 0 ? url.device : 'Not opened', // Set to 'Not opened' if no clicks
+        clicks: url.clicks, // Include the click count
+        createdAt: url.createdAt // Include the creation date
+      };
+    });
+
+    // Get total count of URLs for pagination
+    const totalUrls = await Url.countDocuments({ userId });
+
+    // Calculate total pages for URLs
+    const totalPages = Math.ceil(totalUrls / limit);
+
+    // Log the final response
+    console.log("Response URLs:", responseUrls);
+
+    res.status(200).json({
+      message: "Fetched active URL data successfully",
+      urls: responseUrls,
+      totalUrls, // Total number of URLs for pagination
+      totalPages, // Total pages for URLs
+      currentPage: page, // Current page for URLs
+    });
+  } catch (err) {
+    console.error("Error fetching active URL data:", err.message);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
