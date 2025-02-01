@@ -23,6 +23,23 @@ mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopol
   .catch(err => console.error("MongoDB connection error:", err));
 
 
+// Middleware to log and format the IP address
+app.use((req, res, next) => {
+  // Get the IP address
+  let ip = req.ip;
+
+  // Convert IPv6 localhost (::1) to IPv4 (127.0.0.1)
+  if (ip === '::1') {
+    ip = '127.0.0.1';
+  }
+
+  // Log the IP address
+  console.log(`Request received from IP: ${ip}`);
+  next();
+});
+
+
+
   // Schedule a job to run every hour
 cron.schedule('0 * * * *', async () => {
   try {

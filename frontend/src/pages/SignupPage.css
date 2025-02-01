@@ -121,3 +121,18 @@ body, html {
     text-decoration: underline;
   }
   
+
+  /* Media Queries for Responsive Design */
+@media (max-width: 768px) {
+  .left-image {
+      display: none; /* Hide the left image on mobile view */
+  }
+
+  .login-page {
+      flex-direction: column; /* Stack elements vertically */
+  }
+
+  .right-form {
+      flex: 1; /* Allow the right form to take full width */
+  }
+}

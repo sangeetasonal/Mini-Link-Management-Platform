@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const Url = require("../models/Url");
-const crypto = require("crypto"); // Import the crypto module for generating IDs
+const crypto = require("crypto"); 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Click = require('../models/Click');
@@ -9,15 +9,13 @@ exports.signup = async (req, res) => {
   const { name, email, mobile, password } = req.body;
 
   try {
-    // Check if user already exists
     const userExists = await User.findOne({ email });
     if (userExists) return res.status(400).json({ message: "User already exists" });
 
-    // Create new user
     const user = new User({ name, email, mobile, password });
     await user.save();
 
-    // Generate JWT token
+    
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
 
     res.status(201).json({ message: "User created successfully", token });
@@ -26,20 +24,16 @@ exports.signup = async (req, res) => {
   }
 };
 
-// Login function
 exports.login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Check if user exists
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "Invalid email or password" });
 
-    // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid email or password" });
 
-    // Generate JWT token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
 
     res.status(200).json({ message: "Login successful", token , name: user.name});
@@ -90,10 +84,10 @@ exports.updateUserDetails = async (req, res) => {
 
 
 exports.getUserDetails = async (req, res) => {
-  const userId = req.user?.userId; // Extract userId from the token in authMiddleware
+  const userId = req.user?.userId; 
 
   try {
-    // Find the user by ID and select specific fields
+    
     const user = await User.findById(userId).select('name email mobile');
 
     if (!user) {
@@ -122,7 +116,6 @@ exports.deleteUser = async (req, res) => {
   }
 
   try {
-    // Delete the user from the database
     const deletedUser = await User.findByIdAndDelete(userId);
 
     if (!deletedUser) {
@@ -141,20 +134,20 @@ exports.deleteUser = async (req, res) => {
 
 // Update a short URL
 exports.updateShortUrl = async (req, res) => {
-  const { urlId } = req.params; // Get the URL ID from the request parameters
-  const { remarks, expirationDate } = req.body; // Get the new remarks and expiration date from the request body
-  const userId = req.user?.userId; // Get userId from the authenticated request
+  const { urlId } = req.params; 
+  const { remarks, expirationDate } = req.body; 
+  const userId = req.user?.userId; 
 
   if (!userId) {
     return res.status(401).json({ message: "Unauthorized: User ID missing" });
   }
 
   try {
-    // Find the URL by ID and ensure it belongs to the user
+   
     const updatedUrl = await Url.findOneAndUpdate(
       { _id: urlId, userId },
       { remarks, expirationDate: expirationDate ? new Date(expirationDate) : null },
-      { new: true, runValidators: true } // Return the updated document
+      { new: true, runValidators: true } 
     );
 
     if (!updatedUrl) {
@@ -163,7 +156,7 @@ exports.updateShortUrl = async (req, res) => {
 
     res.status(200).json({
       message: "Short URL updated successfully",
-      url: updatedUrl, // Return the updated URL
+      url: updatedUrl, 
     });
   } catch (err) {
     console.error("Error updating URL:", err.message);
@@ -174,7 +167,7 @@ exports.updateShortUrl = async (req, res) => {
 
 // Function to hash a URL
 const hashLongUrl = (longUrl) => {
-  const timestamp = Date.now(); // Get the current timestamp
+  const timestamp = Date.now(); 
   return crypto.createHash('sha256').update(longUrl + timestamp).digest('hex').slice(0, 8); // Generate a hash
 };
 
@@ -227,8 +220,10 @@ exports.handleRedirect = async (req, res) => {
   const shortUrl = `${req.protocol}://${req.get("host")}/${shortId}`;
 
   try {
+    // Find the URL associated with the short URL
     const url = await Url.findOne({ shortUrl });
 
+    // Check if the URL exists
     if (!url) {
       return res.status(404).json({ message: 'Short URL not found' });
     }
@@ -242,7 +237,13 @@ exports.handleRedirect = async (req, res) => {
     url.clicks += 1;
 
     // Store IP address and device information
-    const ipAddress = req.ip;
+    let ipAddress = req.ip;
+
+    // Convert IPv6 localhost (::1) to IPv4 (127.0.0.1)
+    if (ipAddress === '::1') {
+      ipAddress = '127.0.0.1';
+    }
+
     const userAgent = req.headers['user-agent'];
     const device = getDevice(userAgent);
 
@@ -253,12 +254,13 @@ exports.handleRedirect = async (req, res) => {
     // Save the updated URL document
     await url.save();
 
+    // Redirect to the original long URL
     res.redirect(url.longUrl);
   } catch (err) {
+    console.error("Error during redirection:", err.message);
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
-
 
 
 
@@ -273,13 +275,12 @@ function getDevice(userAgent) {
 }
 // Fetch all URLs created by the authenticated user with pagination
 exports.getUserUrls = async (req, res) => {
-  const userId = req.user?.userId; // Extract userId from the token in authMiddleware
-  const page = parseInt(req.query.page) || 1; // Current page number
+  const userId = req.user?.userId; 
+  const page = parseInt(req.query.page) || 1; 
   const limit = 10; // Items per page
-  const offset = (page - 1) * limit; // Calculate offset
+  const offset = (page - 1) * limit; 
 
   try {
-    // Retrieve URLs created by the user with pagination
     const urls = await Url.find({ userId })
       .sort({ createdAt: -1 }) // Sort by creation date
       .skip(offset) // Skip the previous pages
@@ -293,10 +294,10 @@ exports.getUserUrls = async (req, res) => {
 
     res.status(200).json({
       message: "Fetched all URLs successfully",
-      urls, // Returning the paginated URLs created by the user
-      totalUrls, // Total number of URLs for pagination
-      totalPages: Math.ceil(totalUrls / limit), // Total number of pages
-      currentPage: page, // Current page number
+      urls,
+      totalUrls, 
+      totalPages: Math.ceil(totalUrls / limit),
+      currentPage: page, 
     });
   } catch (err) {
     console.error("Error fetching URLs:", err.message);
@@ -306,15 +307,15 @@ exports.getUserUrls = async (req, res) => {
 
 // Delete a short URL
 exports.deleteShortUrl = async (req, res) => {
-  const userId = req.user?.userId; // Get userId from the authenticated request
-  const { urlId } = req.params; // Get the URL ID from the request parameters
+  const userId = req.user?.userId;
+  const { urlId } = req.params; 
 
   if (!userId) {
     return res.status(401).json({ message: "Unauthorized: User ID missing" });
   }
 
   try {
-    // Find the URL by ID and ensure it belongs to the user
+    
     const url = await Url.findOneAndDelete({ _id: urlId, userId });
 
     if (!url) {
@@ -332,9 +333,9 @@ exports.deleteShortUrl = async (req, res) => {
 
 // Update a short URL
 exports.updateShortUrl = async (req, res) => {
-  const { urlId } = req.params; // Get the URL ID from the request parameters
-  const { remarks, expirationDate } = req.body; // Get the new remarks and expiration date from the request body
-  const userId = req.user?.userId; // Get userId from the authenticated request
+  const { urlId } = req.params; 
+  const { remarks, expirationDate } = req.body; 
+  const userId = req.user?.userId;
 
   if (!userId) {
     return res.status(401).json({ message: "Unauthorized: User ID missing" });
@@ -345,7 +346,7 @@ exports.updateShortUrl = async (req, res) => {
     const updatedUrl = await Url.findOneAndUpdate(
       { _id: urlId, userId },
       { remarks, expirationDate: expirationDate ? new Date(expirationDate) : null },
-      { new: true, runValidators: true } // Return the updated document
+      { new: true, runValidators: true } 
     );
 
     if (!updatedUrl) {
@@ -354,7 +355,7 @@ exports.updateShortUrl = async (req, res) => {
 
     res.status(200).json({
       message: "Short URL updated successfully",
-      url: updatedUrl, // Return the updated URL
+      url: updatedUrl, 
     });
   } catch (err) {
     console.error("Error updating URL:", err.message);
@@ -365,19 +366,19 @@ exports.updateShortUrl = async (req, res) => {
 
 // Fetch click data for the authenticated user
 exports.getActiveClickData = async (req, res) => {
-  const userId = req.user?.userId; // Extract userId from the token in authMiddleware
+  const userId = req.user?.userId; 
   const page = parseInt(req.query.page) || 1; // Current page number
-  const limit = 10; // Items per page
-  const offset = (page - 1) * limit; // Calculate offset
+  const limit = 10; 
+  const offset = (page - 1) * limit; 
 
-  console.log("User   ID:", userId); // Log the user ID
+  console.log("User   ID:", userId); 
 
   try {
     // Find all URLs associated with the user
     const urls = await Url.find({ userId })
-      .skip(offset) // Skip the previous pages for URLs
-      .limit(limit) // Limit the number of results for URLs
-      .sort({ createdAt: -1 }); // Sort by creation date
+      .skip(offset) 
+      .limit(limit)
+      .sort({ createdAt: -1 }); 
 
 
       
@@ -386,10 +387,10 @@ exports.getActiveClickData = async (req, res) => {
       return {
         longUrl: url.longUrl,
         shortUrl: url.shortUrl,
-        ipAddress: url.clicks > 0 ? url.ipAddress : 'Not opened', // Set to 'Not opened' if no clicks
-        device: url.clicks > 0 ? url.device : 'Not opened', // Set to 'Not opened' if no clicks
-        clicks: url.clicks, // Include the click count
-        createdAt: url.createdAt // Include the creation date
+        ipAddress: url.clicks > 0 ? url.ipAddress : 'Not opened', 
+        device: url.clicks > 0 ? url.device : 'Not opened', 
+        clicks: url.clicks, 
+        createdAt: url.createdAt 
       };
     });
 
@@ -405,9 +406,9 @@ exports.getActiveClickData = async (req, res) => {
     res.status(200).json({
       message: "Fetched active URL data successfully",
       urls: responseUrls,
-      totalUrls, // Total number of URLs for pagination
-      totalPages, // Total pages for URLs
-      currentPage: page, // Current page for URLs
+      totalUrls, 
+      totalPages, 
+      currentPage: page, 
     });
   } catch (err) {
     console.error("Error fetching active URL data:", err.message);

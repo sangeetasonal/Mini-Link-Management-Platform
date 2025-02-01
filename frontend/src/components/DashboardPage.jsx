@@ -25,18 +25,20 @@ import redDlt from "../assets/red-dlt.png";
 import leftArrow from "../assets/left.png";
 import rightArrow from "../assets/right.png";
 import copied from "../assets/copied.png";
+import menuIcon from "../assets/menu.png"; 
+import sort from "../assets/sort.png"
 import axios from "axios"; 
 
 const DashboardPage = () => {
   const [userName, setUserName] = useState("");
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState("");
-  const [activeMenu, setActiveMenu] = useState("dashboard"); // Default active menu
+  const [activeMenu, setActiveMenu] = useState("dashboard");
   const [popupVisible, setPopupVisible] = useState(false);
-  const [expirationDate, setExpirationDate] = useState(""); // State to store expiration date
-  const [displayDate, setDisplayDate] = useState(""); // State to store formatted date-time
-  const [userMobile, setUserMobile] = useState(""); // Define state for user mobile
-  const [userEmail, setUserEmail] = useState(""); // Define state for user email
+  const [expirationDate, setExpirationDate] = useState(""); 
+  const [displayDate, setDisplayDate] = useState(""); 
+  const [userMobile, setUserMobile] = useState(""); 
+  const [userEmail, setUserEmail] = useState(""); 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [destinationUrl, setDestinationUrl] = useState(null);
@@ -47,28 +49,31 @@ const DashboardPage = () => {
   const [isExpirationEnabled, setIsExpirationEnabled] = useState(false);
   const [shortenedUrl, setShortenedUrl] = useState("");
   const [message, setMessage] = useState("");
-  const [links, setLinks] = useState([]); // State to store links data
+  const [links, setLinks] = useState([]); 
   const [imgSrc, setImgSrc] = useState(copy);
   const [editImg, setEditImg] = useState(edit);
   const [deleteImg, setDeleteImg] = useState(dlt);
-  const [deleteLink, setDeleteLink] = useState(null); // Store link to delete
-  const [linkToDelete, setLinkToDelete] = useState(null); // Store the link to delete
-  const [isLoggedIn, setIsLoggedIn] = useState(true); // Assume user is logged in
+  const [deleteLink, setDeleteLink] = useState(null); 
+  const [linkToDelete, setLinkToDelete] = useState(null); 
+  const [isLoggedIn, setIsLoggedIn] = useState(true); 
   const [isProfileSelected, setIsProfileSelected] = useState(false);
-  const profileRef = useRef(null); // Reference to the profile container
+  const profileRef = useRef(null); 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [clicks, setClicks] = useState([]); // State to store clicks data
-  const [filteredLinks, setFilteredLinks] = useState([]); // Links after filtering
-  const [searchQuery, setSearchQuery] = useState(""); // Search input
+  const [clicks, setClicks] = useState([]); 
+  const [filteredLinks, setFilteredLinks] = useState([]); 
+  const [searchQuery, setSearchQuery] = useState(""); 
   const [totalClicks, setTotalClicks] = useState(0);
-  const [urls, setUrls] = useState([]); // State to store URLs
+  const [urls, setUrls] = useState([]); 
   const [clicksByDate, setClicksByDate] = useState({});
   const [hoverStates, setHoverStates] = useState({});
-  const [isPopupVisible, setIsPopupVisible] = useState(false); // State to control popup visibility
-  const [showPopup, setShowPopup] = useState(false); // Popup state
-  const [editLinkId, setEditLinkId] = useState(null); // To store the ID of the link being edited
-  const [originalLink, setOriginalLink] = useState(""); // To store the original link
+  const [isPopupVisible, setIsPopupVisible] = useState(false); 
+  const [showPopup, setShowPopup] = useState(false); 
+  const [editLinkId, setEditLinkId] = useState(null); 
+  const [originalLink, setOriginalLink] = useState(""); 
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+  const [sortOrder, setSortOrder] = useState('asc'); // For date sorting
+  const [statusFilter, setStatusFilter] = useState(null); // For filtering by status
   const [clicksByDevice, setClicksByDevice] = useState({
   mobile: 0,
   desktop: 0,
@@ -98,16 +103,16 @@ const DashboardPage = () => {
         const response = await axios.get('http://localhost:5000/api/auth/details', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log("Response data:", response.data); // Log the response data
+        console.log("Response data:", response.data); 
         
         if (response.status === 200) {
-          setUserName(response.data.user.name); // Assuming the API returns `user.name`
-          setUserMobile(response.data.user.mobile); // Assuming the API returns `user.mobile`
-          setUserEmail(response.data.user.email); // Assuming the API returns `user.email`
+          setUserName(response.data.user.name); 
+          setUserMobile(response.data.user.mobile); 
+          setUserEmail(response.data.user.email); 
         }
       } catch (error) {
         console.error('Error fetching user details:', error);
-        navigate('/login'); // Redirect to login on error
+        navigate('/login'); 
       }
     };
   
@@ -135,11 +140,11 @@ const DashboardPage = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.put(
-        'http://localhost:5000/api/auth/update', // Your backend update endpoint
+        'http://localhost:5000/api/auth/update', 
         {
-          name: userName.trim() || 'defaultName', // Use default value if empty
-          email: userEmail.trim() || 'default@example.com', // Use default value if empty
-          mobile: userMobile.trim() || '0000000000', // Use default value if empty
+          name: userName.trim() || 'defaultName', 
+          email: userEmail.trim() || 'default@example.com', 
+          mobile: userMobile.trim() || '0000000000', 
         },
         {
           headers: {
@@ -205,9 +210,9 @@ const handleExpirationChange = (e) => {
   const selectedDateTime = e.target.value;
   setExpirationDate(selectedDateTime);
   if (selectedDateTime) {
-    setDisplayDate(formatDateTime(selectedDateTime)); // Update with formatted value
+    setDisplayDate(formatDateTime(selectedDateTime)); 
   } else {
-    setDisplayDate(""); // Reset display value if input is cleared
+    setDisplayDate(""); 
   }
 };
 
@@ -219,13 +224,13 @@ const handleExpirationChange = (e) => {
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    toast.success(response.data.message); // Show success toast
-    navigate('/login'); // Redirect to login page after deletion
+    toast.success(response.data.message); 
+    navigate('/login'); 
   } catch (error) {
     console.error('Error deleting account:', error.response.data.message);
-    toast.error('Error deleting account. Please try again.'); // Show error toast
+    toast.error('Error deleting account. Please try again.'); 
   }
-  setShowDeletePopup(false); // Close the popup after action
+  setShowDeletePopup(false); 
 };
 
 
@@ -247,21 +252,21 @@ useEffect(() => {
       });
 
       if (response.status === 200) {
-        setLinks(response.data.urls); // Assuming the API returns an array of URLs in `urls`
+        setLinks(response.data.urls); 
         setTotalPages(response.data.totalPages);
-        setFilteredLinks(response.data.urls); // Initially, set filtered links to all links
+        setFilteredLinks(response.data.urls); 
 
       }
     } catch (error) {
       console.error('Error fetching user URLs:', error);
-      toast.error('Error fetching URLs. Please try again.'); // Show error toast
+      toast.error('Error fetching URLs. Please try again.'); 
     }
   };
 
   if (activeMenu === "links") {
-    fetchLinks(); // Fetch links when the "links" menu is active
+    fetchLinks(); 
   }
-}, [activeMenu, currentPage]); // Add currentPage to the dependency array
+}, [activeMenu, currentPage]); 
 
 
 // Fetch clicks for analytics when the component mounts or when the active menu changes
@@ -473,7 +478,9 @@ const toggleDeletePopup = () => {
   setShowDeletePopup(!showDeletePopup); // Toggle the visibility of the delete popup
 };
 
-
+const toggleSidebar = () => {
+  setIsSidebarVisible(!isSidebarVisible);
+};
 
 const handleSearch = (e) => {
   const query = e.target.value.toLowerCase();
@@ -602,6 +609,29 @@ const handleEditSubmit = async (e) => {
   }
 };
 
+const handleSortByDate = () => {
+  const newSortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+  setSortOrder(newSortOrder);
+  
+  const sortedLinks = [...links].sort((a, b) => {
+      const dateA = new Date(a.createdAt);
+      const dateB = new Date(b.createdAt);
+      return newSortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+  });
+  
+  setFilteredLinks(sortedLinks);
+};
+
+const handleFilterByStatus = () => {
+  if (statusFilter === 'active') {
+      setStatusFilter('inactive');
+      setFilteredLinks(links.filter(link => link.status === 'Inactive')); // Adjusted to match your data
+  } else {
+      setStatusFilter('active');
+      setFilteredLinks(links.filter(link => link.status === 'Active')); // Adjusted to match your data
+  }
+};
+
 
   return (
     <div className="dashboard-page">
@@ -614,7 +644,8 @@ const handleEditSubmit = async (e) => {
         />
       </Helmet>
       {/* Sidebar */}
-      <div className="sidebar">
+      <div className={`sidebar ${isSidebarVisible ? 'active' : ''}`}>
+
         <div className="logo">
           <img src={logo} alt="Logo" />
         </div>
@@ -655,7 +686,10 @@ const handleEditSubmit = async (e) => {
       </div>
 
       {/* Main Content */}
-      <div className="main-content">
+      <div className={`main-content ${isSidebarVisible ? 'active' : ''}`}>
+      <div className="hamburger-menu" onClick={toggleSidebar}>
+          <img src={menuIcon} alt="Menu" className='menu' />
+        </div>
         <div className="headers">
           <div className="greeting">
             <p>
@@ -809,35 +843,41 @@ const handleEditSubmit = async (e) => {
 
               {/* Click Devices */}
               <div className="card">
-                <h3>Click Devices</h3>
-                {totalClicks > 0 ? (
-                  <ul className="click-stats">
-                    <li>
-                      <span>Mobile</span>
-                      <div className="bar">
-                        <div className="fill" style={{ width: `${(clicksByDevice.mobile / totalClicks) * 100}%` }}></div>
-                      </div>
-                      <span className="blue-text">{clicksByDevice.mobile}</span>
-                    </li>
-                    <li>
-                      <span>Desktop</span>
-                      <div className="bar">
-                        <div className="fill" style={{ width: `${(clicksByDevice.desktop / totalClicks) * 100}%` }}></div>
-                      </div>
-                      <span className="blue-text">{clicksByDevice.desktop}</span>
-                    </li>
-                    <li>
-                      <span>Tablet</span>
-                      <div className="bar">
-                        <div className="fill" style={{ width: `${(clicksByDevice.tablet / totalClicks) * 100}%` }}></div>
-                      </div>
-                      <span className="blue-text">{clicksByDevice.tablet}</span>
-                    </li>
-                  </ul>
-                ) : (
-                  <p>No clicks recorded for any device</p>              
-                )}
-              </div>
+  <h3>Click Devices</h3>
+  {clicksByDevice.mobile > 0 || clicksByDevice.desktop > 0 || clicksByDevice.tablet > 0 ? (
+    <ul className="click-stats">
+      {clicksByDevice.mobile > 0 && (
+        <li>
+          <span>Mobile</span>
+          <div className="bar">
+            <div className="fill" style={{ width: `${(clicksByDevice.mobile / totalClicks) * 100}%` }}></div>
+          </div>
+          <span className="blue-text">{clicksByDevice.mobile}</span>
+        </li>
+      )}
+      {clicksByDevice.desktop > 0 && (
+        <li>
+          <span>Desktop</span>
+          <div className="bar">
+            <div className="fill" style={{ width: `${(clicksByDevice.desktop / totalClicks) * 100}%` }}></div>
+          </div>
+          <span className="blue-text">{clicksByDevice.desktop}</span>
+        </li>
+      )}
+      {clicksByDevice.tablet > 0 && (
+        <li>
+          <span>Tablet</span>
+          <div className="bar">
+            <div className="fill" style={{ width: `${(clicksByDevice.tablet / totalClicks) * 100}%` }}></div>
+          </div>
+          <span className="blue-text">{clicksByDevice.tablet}</span>
+        </li>
+      )}
+    </ul>
+  ) : (
+    <p>No clicks recorded for any device</p>
+  )}
+</div>
             </div>
           </div>
         )}
@@ -848,12 +888,16 @@ const handleEditSubmit = async (e) => {
               <table className="links-table">
                 <thead>
                   <tr>
-                    <th>Date</th>
+                  <th onClick={handleSortByDate}>
+                            Date <img src={sort} alt="" className='sort' />
+                        </th>
                     <th>Original Link</th>
                     <th>Short Link</th>
                     <th>Remarks</th>
                     <th>Clicks</th>
-                    <th>Status</th>
+                    <th onClick={handleFilterByStatus}>
+                            Status <img src={sort} alt="" className='sort-status' />
+                        </th>
                     <th>Action</th>
                   </tr>
                 </thead>
