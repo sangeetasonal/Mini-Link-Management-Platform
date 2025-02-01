@@ -6,6 +6,7 @@ const crypto = require('crypto'); // For hashing
 const Url = require('./models/Url'); // Assuming you have a model for storing URLs
 const authRoutes = require('./routes/auth'); // Authentication routes
 const linkRoutes = require('./routes/auth'); // Import the new routes
+const cron = require('node-cron'); // Import node-cron
 
 dotenv.config(); // Load environment variables from .env file
 
@@ -20,6 +21,23 @@ app.use(express.json());
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log("Connected to MongoDB"))
   .catch(err => console.error("MongoDB connection error:", err));
+
+
+  // Schedule a job to run every hour
+cron.schedule('0 * * * *', async () => {
+  try {
+    const now = new Date();
+    // Update links that have expired
+    const result = await Url.updateMany(
+      { expirationDate: { $lt: now }, status: 'Active' },
+      { status: 'Inactive' }
+    );
+
+    console.log(`Updated ${result.nModified} links to inactive status.`);
+  } catch (error) {
+    console.error('Error updating inactive links:', error);
+  }
+});
 
 // Add a route for the root path
 app.get("/", (req, res) => {

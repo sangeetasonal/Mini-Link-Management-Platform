@@ -139,7 +139,37 @@ exports.deleteUser = async (req, res) => {
 };
 
 
+// Update a short URL
+exports.updateShortUrl = async (req, res) => {
+  const { urlId } = req.params; // Get the URL ID from the request parameters
+  const { remarks, expirationDate } = req.body; // Get the new remarks and expiration date from the request body
+  const userId = req.user?.userId; // Get userId from the authenticated request
 
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized: User ID missing" });
+  }
+
+  try {
+    // Find the URL by ID and ensure it belongs to the user
+    const updatedUrl = await Url.findOneAndUpdate(
+      { _id: urlId, userId },
+      { remarks, expirationDate: expirationDate ? new Date(expirationDate) : null },
+      { new: true, runValidators: true } // Return the updated document
+    );
+
+    if (!updatedUrl) {
+      return res.status(404).json({ message: "URL not found or you do not have permission to update it" });
+    }
+
+    res.status(200).json({
+      message: "Short URL updated successfully",
+      url: updatedUrl, // Return the updated URL
+    });
+  } catch (err) {
+    console.error("Error updating URL:", err.message);
+    res.status(500).json({ message: "Error updating URL", error: err.message });
+  }
+};
 
 
 // Function to hash a URL
@@ -150,12 +180,10 @@ const hashLongUrl = (longUrl) => {
 
 
 // Create a short URL
- // Create a short URL
- exports.createShortUrl = async (req, res) => {
-  console.log("User  ID from request:", req.user?.userId); // Debug log
-
+exports.createShortUrl = async (req, res) => {
   const { longUrl, remarks, expirationDate } = req.body;
-  const userId = req.user?.userId; // Get userId from the authenticated request
+  const userId = req.user?.userId;
+
   if (!userId) {
     return res.status(401).json({ message: "Unauthorized: User ID missing" });
   }
@@ -165,24 +193,17 @@ const hashLongUrl = (longUrl) => {
   }
 
   try {
-    const hashedUrl = hashLongUrl(longUrl); // Generate a unique hash for the URL
-    const shortUrl = `${req.protocol}://${req.get("host")}/${hashedUrl}`; // Full clickable link
+    const hashedUrl = hashLongUrl(longUrl);
+    const shortUrl = `${req.protocol}://${req.get("host")}/${hashedUrl}`;
 
-    // Remove the check for existing short URL
-    // This allows the creation of a new short URL even if the original link is the same
-
-    const status = expirationDate && new Date(expirationDate) < new Date() ? 'Inactive' : 'Active';
-
-    // Create a new URL document with userId
     const newShortUrl = new Url({
       longUrl,
       shortUrl,
       remarks,
-      expirationEnabled: !!expirationDate,
-      expirationDate,
+      expirationDate: expirationDate ? new Date(expirationDate) : null, // Store expiration date
       createdAt: new Date(),
-      status,
-      userId // Associate the URL with the user
+      status: expirationDate && new Date(expirationDate) < new Date() ? 'Inactive' : 'Active',
+      userId
     });
 
     await newShortUrl.save();
@@ -193,15 +214,13 @@ const hashLongUrl = (longUrl) => {
       longUrl,
       remarks,
       createdAt: newShortUrl.createdAt,
-      status,
+      status: newShortUrl.status,
     });
   } catch (err) {
-    console.error('Error creating short URL:', err.message);
     res.status(500).json({ message: 'Error creating short URL', error: err.message });
   }
 };
 
-// Handle redirection
 // Handle redirection
 exports.handleRedirect = async (req, res) => {
   const { shortId } = req.params;
@@ -214,6 +233,11 @@ exports.handleRedirect = async (req, res) => {
       return res.status(404).json({ message: 'Short URL not found' });
     }
 
+    // Check if the URL is inactive due to expiration
+    if (url.status === 'Inactive' || (url.expirationDate && new Date() > url.expirationDate)) {
+      return res.status(410).json({ message: 'This link has expired and is no longer valid.' });
+    }
+
     // Increment the click count
     url.clicks += 1;
 
@@ -223,23 +247,21 @@ exports.handleRedirect = async (req, res) => {
     const device = getDevice(userAgent);
 
     // Log the IP address and device information
-    console.log(`IP Address: ${ipAddress}`); // Log the IP address
-    console.log(`Device: ${device}`); // Log the device information
-    // Update the URL document with IP address and device
     url.ipAddress = ipAddress; // Update IP address
     url.device = device; // Update device
 
     // Save the updated URL document
     await url.save();
 
-    console.log(`URL opened: ${url.longUrl}, Device: ${device}, IP: ${ipAddress}`);
-
     res.redirect(url.longUrl);
   } catch (err) {
-    console.error('Error during redirection:', err.message);
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+
+
+
 // Function to get device from user agent
 function getDevice(userAgent) {
   if (userAgent.includes('Android')) return 'Android';
@@ -307,6 +329,38 @@ exports.deleteShortUrl = async (req, res) => {
 };
 
 
+
+// Update a short URL
+exports.updateShortUrl = async (req, res) => {
+  const { urlId } = req.params; // Get the URL ID from the request parameters
+  const { remarks, expirationDate } = req.body; // Get the new remarks and expiration date from the request body
+  const userId = req.user?.userId; // Get userId from the authenticated request
+
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized: User ID missing" });
+  }
+
+  try {
+    // Find the URL by ID and ensure it belongs to the user
+    const updatedUrl = await Url.findOneAndUpdate(
+      { _id: urlId, userId },
+      { remarks, expirationDate: expirationDate ? new Date(expirationDate) : null },
+      { new: true, runValidators: true } // Return the updated document
+    );
+
+    if (!updatedUrl) {
+      return res.status(404).json({ message: "URL not found or you do not have permission to update it" });
+    }
+
+    res.status(200).json({
+      message: "Short URL updated successfully",
+      url: updatedUrl, // Return the updated URL
+    });
+  } catch (err) {
+    console.error("Error updating URL:", err.message);
+    res.status(500).json({ message: "Error updating URL", error: err.message });
+  }
+};
 
 
 // Fetch click data for the authenticated user

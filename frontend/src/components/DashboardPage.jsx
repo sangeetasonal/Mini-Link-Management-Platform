@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import './DashboardPage.css';
 import dash from "../assets/doc.png";
 import dashBlue from "../assets/doc-blue.png";
@@ -23,6 +24,7 @@ import blueEdit from "../assets/blue-edit.png";
 import redDlt from "../assets/red-dlt.png";
 import leftArrow from "../assets/left.png";
 import rightArrow from "../assets/right.png";
+import copied from "../assets/copied.png";
 import axios from "axios"; 
 
 const DashboardPage = () => {
@@ -61,8 +63,13 @@ const DashboardPage = () => {
   const [searchQuery, setSearchQuery] = useState(""); // Search input
   const [totalClicks, setTotalClicks] = useState(0);
   const [urls, setUrls] = useState([]); // State to store URLs
-const [clicksByDate, setClicksByDate] = useState({});
-const [clicksByDevice, setClicksByDevice] = useState({
+  const [clicksByDate, setClicksByDate] = useState({});
+  const [hoverStates, setHoverStates] = useState({});
+  const [isPopupVisible, setIsPopupVisible] = useState(false); // State to control popup visibility
+  const [showPopup, setShowPopup] = useState(false); // Popup state
+  const [editLinkId, setEditLinkId] = useState(null); // To store the ID of the link being edited
+  const [originalLink, setOriginalLink] = useState(""); // To store the original link
+  const [clicksByDevice, setClicksByDevice] = useState({
   mobile: 0,
   desktop: 0,
   tablet: 0,
@@ -143,11 +150,11 @@ const [clicksByDevice, setClicksByDevice] = useState({
   
       if (response.status === 200) {
         console.log('User details updated:', response.data);
-        alert('Details updated successfully');
+        toast.success('Details updated successfully'); // Show success toast
       }
     } catch (error) {
       console.error('Error updating user details:', error);
-      alert('Error updating details');
+      toast.error('Error updating details'); // Show error toast
     }
   };
   const getInitials = (name) => {
@@ -211,44 +218,19 @@ const handleExpirationChange = (e) => {
     const response = await axios.delete('http://localhost:5000/api/auth/delete', {
       headers: { Authorization: `Bearer ${token}` },
     });
-    alert(response.data.message); // Show success message
+
+    toast.success(response.data.message); // Show success toast
     navigate('/login'); // Redirect to login page after deletion
   } catch (error) {
     console.error('Error deleting account:', error.response.data.message);
-    alert('Error deleting account. Please try again.');
+    toast.error('Error deleting account. Please try again.'); // Show error toast
   }
   setShowDeletePopup(false); // Close the popup after action
 };
 
 
  
-// Fetch links when the component mounts or when the active menu changes
-// useEffect(() => {
-//   const fetchLinks = async () => {
-//     try {
-//       const token = localStorage.getItem('token');
-//       if (!token) {
-//         console.log("No token found in localStorage");
-//         return;
-//       }
 
-//       const response = await axios.get('http://localhost:5000/api/auth/all', {
-//         headers: { Authorization: `Bearer ${token}` },
-//       });
-
-//       if (response.status === 200) {
-//         setLinks(response.data.urls); // Assuming the API returns an array of URLs in `urls`
-//       }
-//     } catch (error) {
-//       console.error('Error fetching user URLs:', error);
-//       alert('Error fetching URLs. Please try again.');
-//     }
-//   };
-
-//   if (activeMenu === "links") {
-//     fetchLinks(); // Fetch links when the "links" menu is active
-//   }
-// }, [activeMenu]);
 
 // Fetch links when the component mounts or when the active menu changes
 useEffect(() => {
@@ -266,11 +248,13 @@ useEffect(() => {
 
       if (response.status === 200) {
         setLinks(response.data.urls); // Assuming the API returns an array of URLs in `urls`
-        setTotalPages(response.data.totalPages); // Assuming the API returns total pages
+        setTotalPages(response.data.totalPages);
+        setFilteredLinks(response.data.urls); // Initially, set filtered links to all links
+
       }
     } catch (error) {
       console.error('Error fetching user URLs:', error);
-      alert('Error fetching URLs. Please try again.');
+      toast.error('Error fetching URLs. Please try again.'); // Show error toast
     }
   };
 
@@ -330,6 +314,28 @@ const handleClickOutside = (event) => {
   }
 };
 
+
+const handleCopyToClipboard = (shortUrl) => {
+  navigator.clipboard.writeText(shortUrl) // Copy the short URL to the clipboard
+    .then(() => {
+      setIsPopupVisible(true); // Show the popup
+      setTimeout(() => {
+        setIsPopupVisible(false); // Hide the popup after 2000 milliseconds
+      }, 2000);
+    })
+    .catch((err) => {
+      console.error('Failed to copy: ', err);
+    });
+};
+
+const CopyPopup = ({ message }) => {
+    return (
+      <div className="copy-popup">
+        <img src={copied} alt="" />
+     Link Copied    
+  </div>
+    );
+  };
 useEffect(() => {
   // Add event listener for clicks outside the profile
   document.addEventListener('mousedown', handleClickOutside);
@@ -397,7 +403,7 @@ const handleFormSubmit = async (e) => {
     });
 
     // Show success alert message
-    alert("Short URL created successfully!");
+    toast.success("Short URL created successfully!"); // Replace alert with toast
 
     // Close the popup
     togglePopup();
@@ -410,7 +416,7 @@ const handleFormSubmit = async (e) => {
     
   } catch (error) {
     console.error("Error creating short URL:", error.message);
-    setMessage(error.message || "Error creating short URL.");
+    toast.error(error.message || "Error creating short URL."); // Show error toast
   }
 };
 const handleClear = () => {
@@ -446,10 +452,10 @@ const handleDelete = async () => {
       headers: { Authorization: `Bearer ${token}` },
     });
     setLinks(links.filter(link => link._id !== linkToDelete._id)); // Remove the deleted link from the state
-    alert("Link deleted successfully!");
+    toast.success("Link deleted successfully!"); // Show success toast
   } catch (error) {
     console.error('Error deleting link:', error);
-    alert('Error deleting link. Please try again.');
+    toast.error('Error deleting link. Please try again.'); // Show error toast
   }
   setShowDeletePopup(false); // Close the delete confirmation popup
 };
@@ -472,6 +478,7 @@ const toggleDeletePopup = () => {
 const handleSearch = (e) => {
   const query = e.target.value.toLowerCase();
   setSearchQuery(query);
+  setActiveMenu("links");
 
   if (query) {
     const results = links.filter(link => 
@@ -479,19 +486,18 @@ const handleSearch = (e) => {
     );
 
     setFilteredLinks(results); // Set filtered links to the results
-
-    // Only show alert when Enter is pressed
-    if (e.key === 'Enter') {
-      if (results.length > 0) {
-        setActiveMenu("links"); // Set the active menu to "links"
-        // Optionally, you can navigate to the links page if needed
-      } else {
-        alert("No remarks found");
-      }
-    }
   } else {
-    setFilteredLinks(links); // Reset to original links if search is cleared
+    setFilteredLinks(links); // Reset to all links if search is cleared
   }
+};
+
+
+const handleMouseEnter = (id, type) => {
+  setHoverStates(prev => ({ ...prev, [id]: { ...prev[id], [type]: true } }));
+};
+
+const handleMouseLeave = (id, type) => {
+  setHoverStates(prev => ({ ...prev, [id]: { ...prev[id], [type]: false } }));
 };
 
 useEffect(() => {
@@ -544,6 +550,57 @@ useEffect(() => {
     fetchLinks(); // Fetch links when the "dashboard" menu is active
   }
 }, [activeMenu]);
+
+const handleEditSubmit = async (e) => {
+  e.preventDefault();
+
+  // Validate required fields
+  if (!remarks) {
+    alert("Please fill out all required fields.");
+    return;
+  }
+
+  const payload = {
+    remarks,
+    expirationDate: isExpirationEnabled ? expirationDate : null,
+  };
+
+  try {
+    const token = localStorage.getItem('token'); // Get the token from local storage
+    const response = await fetch(`http://localhost:5000/api/auth/url/${editLinkId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`, // Include the token in the Authorization header
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to update the URL");
+    }
+
+    // Update the links state with the edited link
+    setLinks((prevLinks) => 
+      prevLinks.map(link => 
+        link._id === editLinkId ? { ...link, remarks, expirationDate: isExpirationEnabled ? expirationDate : null } : link
+      )
+    );
+
+    // Show success alert message
+    toast.success("Link updated successfully!"); // Show success toast
+
+    // Close the popup
+    setShowPopup(false);
+    handleClear(); // Clear fields after submission
+
+  } catch (error) {
+    console.error("Error updating link:", error.message);
+    setMessage(error.message || "Error updating link.");
+  }
+};
 
 
   return (
@@ -617,9 +674,9 @@ useEffect(() => {
   <input 
     type="text" 
     placeholder="Search by remarks" 
-    value={searchQuery}
-    onChange={(e) => handleSearch(e)} // Call handleSearch on input change
-    onKeyDown={(e) => handleSearch(e)} // Call handleSearch on key down
+    value={searchQuery} 
+  onChange={handleSearch} 
+ 
   />
 </div>
             <div className="profile-container" ref={profileRef}>
@@ -786,110 +843,88 @@ useEffect(() => {
         )}
 
 {activeMenu === "links" && (
-  <div className="links-content">
-    <div className="scrollable-links">
-      <table className="links-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Original Link</th>
-            <th>Short Link</th>
-            <th>Remarks</th>
-            <th>Clicks</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(filteredLinks.length > 0 ? filteredLinks : links).length > 0 ? (
-            (filteredLinks.length > 0 ? filteredLinks : links).map((link) => (
-              <tr key={link._id}> {/* Use unique identifier for the key */}
-                <td>{new Date(link.createdAt).toLocaleString('en-US', {
-                  month: 'short', // Short month name
-                  day: '2-digit', // 2-digit day
-                  year: 'numeric', // Numeric year
-                  hour: '2-digit', // 2-digit hour
-                  minute: '2-digit', // 2-digit minute
-                  hour12: false // 24-hour format
-                })}</td> {/* Format the date */}
-                <td>{link.longUrl}</td>
-                <td className="short-link-cell">
-                  {link.shortUrl.length > 15 
-                    ? `${link.shortUrl.substring(0, 15)}....` 
-                    : link.shortUrl}
-                  <button 
-                    className="copy-btn" 
-                    onClick={() => {
-                      navigator.clipboard.writeText(link.shortUrl);
-                      alert("Short URL copied: " + link.shortUrl);
-                    }}
-                    onMouseEnter={() => {
-                      setLinks(prevLinks => prevLinks.map(l => 
-                        l._id === link._id ? { ...l, isCopyHovered: true } : l
-                      ));
-                    }}
-                    onMouseLeave={() => {
-                      setLinks(prevLinks => prevLinks.map(l => 
-                        l._id === link._id ? { ...l, isCopyHovered: false } : l
-                      ));
-                    }}
-                  >
-                    <img src={link.isCopyHovered ? blueCopy : copy} alt="Copy" className="copy-icon" />
-                  </button>
-                </td>
-                <td>{link.remarks}</td>
-                <td>{link.clicks || 0}</td>
-                <td className={link.status === 'Active' ? 'status-active' : 'status-inactive'}>
-                  {link.status}
-                </td>
-                <td>
-                  <button 
-                    className="edit-btn" 
-                    onMouseEnter={() => {
-                      setLinks(prevLinks => prevLinks.map(l => 
-                        l._id === link._id ? { ...l, isEditHovered: true } : l
-                      ));
-                    }}
-                    onMouseLeave={() => {
-                      setLinks(prevLinks => prevLinks.map(l => 
-                        l._id === link._id ? { ...l, isEditHovered: false } : l
-                      ));
-                    }}
-                    onClick={() => {
-                      alert("Edit action triggered");
-                    }}
-                  >
-                    <img src={link.isEditHovered ? blueEdit : edit} alt="Edit" />
-                  </button>
+          <div className="links-content">
+            <div className="scrollable-links">
+              <table className="links-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Original Link</th>
+                    <th>Short Link</th>
+                    <th>Remarks</th>
+                    <th>Clicks</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredLinks.length > 0 ? (
+                    filteredLinks.map((link) => (
+                      <tr key={link._id}>
+                        <td>{new Date(link.createdAt).toLocaleString('en-US', {
+                          month: 'short',
+                          day: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: false
+                        })}</td>
+                        <td>{link.longUrl}</td>
+                        <td className="short-link-cell">
+                          {link.shortUrl.length > 15 
+                            ? `${link.shortUrl.substring(0, 15)}....` 
+                            : link.shortUrl}
+                         <button 
+    className="copy-btn" 
+    onMouseEnter={() => handleMouseEnter(link._id, 'copy')}
+    onMouseLeave={() => handleMouseLeave(link._id, 'copy')}
+    onClick={() => handleCopyToClipboard(link.shortUrl)} // Call handleCopyToClipboard on click
 
-                  <button 
-                    className="delete-btn" 
-                    onMouseEnter={() => {
-                      setLinks(prevLinks => prevLinks.map(l => 
-                        l._id === link._id ? { ...l, isDeleteHovered: true } : l
-                      ));
-                    }}
-                    onMouseLeave={() => {
-                      setLinks(prevLinks => prevLinks.map(l => 
-                        l._id === link._id ? { ...l, isDeleteHovered: false } : l
-                      ));
-                    }}
-                    onClick={() => confirmDelete(link)} // Show confirmation popup
-                  >
-                    <img src={link.isDeleteHovered ? redDlt : dlt} alt="Delete" />
-                  </button>
-                </td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="7" style={{ textAlign: 'center' }}>
-                No data available
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+  >
+    <img src={hoverStates[link._id]?.copy ? blueCopy : copy} alt="Copy" className="copy-icon" />
+  </button>
+                        </td>
+                        <td>{link.remarks}</td>
+                        <td>{link.clicks || 0}</td>
+                        <td className={link.status === 'Active' ? 'status-active' : 'status-inactive'}>
+                          {link.status}
+                        </td>
+                        <td>
+                        <button 
+  className="edit-btn" 
+  onMouseEnter={() => handleMouseEnter(link._id, 'edit')}
+  onMouseLeave={() => handleMouseLeave(link._id, 'edit')}
+  onClick={() => {
+    setOriginalLink(link.longUrl); // Set the original link
+    setRemarks(link.remarks); // Set the remarks
+    setExpirationDate(link.expirationDate ? new Date(link.expirationDate).toISOString().slice(0, 16) : ""); // Set the expiration date
+    setIsExpirationEnabled(!!link.expirationDate); // Enable expiration if it exists
+    setEditLinkId(link._id); // Set the ID of the link being edited
+    setShowPopup(true); // Show the popup
+  }}
+>
+  <img src={hoverStates[link._id]?.edit ? blueEdit : edit} alt="Edit" />
+</button>
+  <button 
+    className="delete-btn" 
+    onMouseEnter={() => handleMouseEnter(link._id, 'delete')}
+    onMouseLeave={() => handleMouseLeave(link._id, 'delete')}
+    onClick={() => confirmDelete(link)}
+  >
+    <img src={hoverStates[link._id]?.delete ? redDlt : dlt} alt="Delete" />
+  </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                    <td colSpan="7" className="nodata" >
+                      No data available
+                    </td>
+                  </tr>
+                  )}
+                </tbody>
+              </table>
     </div>
 
     <div className="pagination">
@@ -912,6 +947,84 @@ useEffect(() => {
   </div>
 )}
 
+{isPopupVisible && <CopyPopup />}
+  {/* Confirmation Popup */}
+  {showPopup && (
+  <div className="popup-overlay">
+    <div className="popup">
+      <div className="popup-content">
+        <div className="upper">
+          <h2>Edit Link</h2>
+          <img
+            src={close}
+            alt="Close"
+            className="close-icon"
+            onClick={() => {
+              setShowPopup(false);
+              handleClear(); // Clear fields when closing
+            }} 
+          />
+        </div>
+        <form onSubmit={handleEditSubmit}>
+          {/* Original Link (Read-only) */}
+          <label>
+            Original Link <span className="required">*</span>
+            <input
+              type="text"
+              value={originalLink}
+              readOnly
+            />
+          </label>
+
+          {/* Remarks */}
+          <label className="req">
+            Remarks <span className="required">*</span>
+            <textarea
+              placeholder="Add remarks"
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              required
+            />
+          </label>
+
+          {/* Link Expiration */}
+          <label className="link-expiration-container">
+            <div className="toggle-and-label">
+              <span>Link Expiration</span>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={isExpirationEnabled}
+                  onChange={() => setIsExpirationEnabled(!isExpirationEnabled)}
+                />
+                <span className="slider"></span>
+              </label>
+            </div>
+            <input
+              type="datetime-local"
+              value={expirationDate}
+              onChange={(e) => setExpirationDate(e.target.value)}
+              disabled={!isExpirationEnabled}
+            />
+          </label>
+
+          {/* Action Buttons */}
+          <div className="popup-actions">
+            <button type="button" className="clear-button" onClick={handleClear}>
+              Clear
+            </button>
+            <button type="submit" className="create-button">
+              Save
+            </button>
+          </div>
+
+          {/* Display Message */}
+          {message && <p className="message">{message}</p>}
+        </form>
+      </div>
+    </div>
+  </div>
+)}
 
 {/* Delete Confirmation Popup */}
 {showDeletePopup && (

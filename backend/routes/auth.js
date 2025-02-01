@@ -9,8 +9,8 @@ const {
     createShortUrl ,
     getUserUrls,
     deleteShortUrl,
-    getActiveClickData
-    } = require('../controllers/authController');
+    getActiveClickData,
+    updateShortUrl    } = require('../controllers/authController');
 const authMiddleware = require('../middlewares/authMiddleware');
 
 const router = express.Router();
@@ -28,6 +28,7 @@ router.post('/create', authMiddleware, createShortUrl);
 router.get('/all', authMiddleware, getUserUrls); 
 router.get('/clicks', authMiddleware, getActiveClickData);
 router.delete('/url/:urlId', authMiddleware, deleteShortUrl);
+router.put('/url/:urlId', authMiddleware, updateShortUrl);
 router.get('/:shortId',  handleRedirect);
 
 
