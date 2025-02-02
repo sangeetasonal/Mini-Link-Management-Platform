@@ -632,6 +632,19 @@ const handleFilterByStatus = () => {
   }
 };
 
+ // Handle sorting by date
+ const handleSort = () => {
+  const newSortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+  setSortOrder(newSortOrder);
+
+  const sortedClicks = [...clicks].sort((a, b) => {
+    const dateA = new Date(a.createdAt);
+    const dateB = new Date(b.createdAt);
+    return newSortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+  });
+
+  setClicks(sortedClicks);
+};
 
   return (
     <div className="dashboard-page">
@@ -1095,7 +1108,9 @@ const handleFilterByStatus = () => {
    <table>
      <thead>
        <tr>
-         <th>Date</th>
+       <th onClick={handleSort} style={{ cursor: 'pointer' }}>
+                  Date <img src={sort} alt="" className='sort' />
+                </th>
          <th>Original Link</th>
          <th>Short Link</th>
          <th>IP Address</th>

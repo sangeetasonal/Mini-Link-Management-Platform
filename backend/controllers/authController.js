@@ -187,7 +187,7 @@ exports.createShortUrl = async (req, res) => {
 
   try {
     const hashedUrl = hashLongUrl(longUrl);
-    const shortUrl = `${req.protocol}://${req.get("host")}/${hashedUrl}`;
+    const shortUrl = `${process.env.BASE_URL}/${hashedUrl}`; // Use the environment variable
 
     const newShortUrl = new Url({
       longUrl,
