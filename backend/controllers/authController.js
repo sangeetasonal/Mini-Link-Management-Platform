@@ -187,7 +187,8 @@ exports.createShortUrl = async (req, res) => {
 
   try {
     const hashedUrl = hashLongUrl(longUrl);
-    const shortUrl = `${process.env.BASE_URL}/${hashedUrl}`; // Use the environment variable
+    const shortUrl = `${process.env.BASE_URL}/${hashedUrl}`; // Use BASE_URL from environment variables
+    console.log("Creating Short URL:", shortUrl); // Log the short URL being created
 
     const newShortUrl = new Url({
       longUrl,
@@ -217,7 +218,11 @@ exports.createShortUrl = async (req, res) => {
 // Handle redirection
 exports.handleRedirect = async (req, res) => {
   const { shortId } = req.params;
-  const shortUrl = `${req.protocol}://${req.get("host")}/${shortId}`;
+  console.log("Received request for shortId:", shortId); // Log the incoming shortId
+
+  const shortUrl = `${process.env.BASE_URL}/${shortId}`; // Construct the full short URL
+  console.log("Incoming shortId:", shortId); // Log the incoming shortId
+  console.log("Constructed shortUrl:", shortUrl); // Log the constructed shortUrl
 
   try {
     // Find the URL associated with the short URL
