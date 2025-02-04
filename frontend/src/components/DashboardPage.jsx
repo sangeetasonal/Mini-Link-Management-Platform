@@ -276,7 +276,6 @@ useEffect(() => {
       }
     } catch (error) {
       console.error('Error fetching user URLs:', error);
-      toast.error('Error fetching URLs. Please try again.'); 
     }
   };
 

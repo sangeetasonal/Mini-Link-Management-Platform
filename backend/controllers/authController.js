@@ -219,47 +219,53 @@ exports.createShortUrl = async (req, res) => {
 };
 // Handle redirection
 exports.handleRedirect = async (req, res) => {
-  const { shortId } = req.params; // Extract the shortId from the request parameters
-  const shortUrl = `${process.env.BASE_URL}/${shortId}`; // Construct the full short URL
+  const { shortId } = req.params;
+  const shortUrl = `${process.env.BASE_URL}/${shortId}`;
 
-  console.log("Incoming shortId:", shortId); // Log the incoming shortId
-  console.log("Constructed shortUrl for lookup:", shortUrl); // Log the constructed shortUrl
+  console.log("Redirect handler called for shortId:", shortId);
 
   try {
-    // Find the URL associated with the short URL
-    const url = await Url.findOne({ shortUrl });
+      const url = await Url.findOne({ shortUrl });
 
-    // Check if the URL exists
-    if (!url) {
-      return res.status(404).json({ message: 'Short URL not found' });
-    }
+      if (!url) {
+          return res.status(404).json({ message: 'Short URL not found' });
+      }
 
-    // Check if the URL is inactive due to expiration
-    if (url.status === 'Inactive' || (url.expirationDate && new Date() > url.expirationDate)) {
-      return res.status(410).json({ message: 'This link has expired and is no longer valid.' });
-    }
+      if (url.status === 'Inactive' || (url.expirationDate && new Date() > url.expirationDate)) {
+          return res.status(410).json({ message: 'This link has expired and is no longer valid.' });
+      }
 
-    // Increment the click count
-    url.clicks += 1;
-    // Store IP address and device information
-    let ipAddress = req.ip;
-    // Convert IPv6 localhost (::1) to IPv4 (127.0.0.1)
-    if (ipAddress === '::1') {
-      ipAddress = '127.0.0.1';
-    }
-    const userAgent = req.headers['user-agent'];
-    const device = getDevice(userAgent);
-    // Log the IP address and device information
-    url.ipAddress = ipAddress; // Update IP address
-    url.device = device; // Update device
-    // Save the updated URL document
-    await url.save();
+      let ipAddress = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+      if (ipAddress.includes(',')) {
+          ipAddress = ipAddress.split(',')[0]; // Extract real IP if multiple are listed
+      }
+      if (ipAddress === '::1') {
+          ipAddress = '127.0.0.1';
+      }
 
-    // Redirect to the original long URL
-    res.redirect(url.longUrl);
+      const userAgent = req.headers['user-agent'];
+      const device = getDevice(userAgent);
+
+      console.log("Request IP:", ipAddress);
+      console.log("User-Agent:", userAgent);
+      console.log("Device:", device);
+
+      // Update URL document
+      const updatedUrl = await Url.findOneAndUpdate(
+          { shortUrl },
+          { 
+              $set: { ipAddress, device },
+              $inc: { clicks: 1 }
+          },
+          { new: true }
+      );
+
+      console.log("Updated URL after click:", updatedUrl);
+
+      res.redirect(url.longUrl);
   } catch (err) {
-    console.error("Error during redirection:", err.message);
-    res.status(500).json({ message: 'Server error', error: err.message });
+      console.error("Error during redirection:", err.message);
+      res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 // Function to get device from user agent
