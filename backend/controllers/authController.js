@@ -379,7 +379,10 @@ exports.getActiveClickData = async (req, res) => {
 
   try {
     // Find all URLs associated with the user
-    const urls = await Url.find({ userId })
+   const urls = await Url.find({ 
+            userId, 
+            clicks: { $gt: 0 } // Only fetch URLs with clicks greater than 0
+        })
       .skip(offset) 
       .limit(limit)
       .sort({ createdAt: -1 }); 
