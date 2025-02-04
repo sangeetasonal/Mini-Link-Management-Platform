@@ -241,7 +241,17 @@ exports.handleRedirect = async (req, res) => {
 
     // Increment the click count
     url.clicks += 1;
-
+    // Store IP address and device information
+    let ipAddress = req.ip;
+    // Convert IPv6 localhost (::1) to IPv4 (127.0.0.1)
+    if (ipAddress === '::1') {
+      ipAddress = '127.0.0.1';
+    }
+    const userAgent = req.headers['user-agent'];
+    const device = getDevice(userAgent);
+    // Log the IP address and device information
+    url.ipAddress = ipAddress; // Update IP address
+    url.device = device; // Update device
     // Save the updated URL document
     await url.save();
 
