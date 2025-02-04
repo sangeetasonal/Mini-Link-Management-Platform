@@ -1260,3 +1260,50 @@ margin-right: 0;
   width: 46px;
  }
 }
+
+
+@media (max-width: 320px) {
+  .search-container input{
+    margin-top: 4px;
+    width: 87px;
+  }
+  .profile-container{
+    margin-top: -19px;
+    margin-left: -87px;
+    margin-right: -18px;
+  
+  }
+  .search-container{
+    margin-left: -125px;
+    margin-top: -6px;
+   }
+  
+        .headers {
+        margin-left: 27px;
+    }
+    .profile {
+      height: 28px;
+      width: 28px;
+      margin-left: 9px;
+      margin-top: 51px;
+  }
+  .actions{
+    display: contents;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 6px;
+    top: 35%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+}
+.create-btn{
+  margin-left: -24px;
+  height: 23px;
+  margin-top: 27px;
+}
+
+}
+ 
