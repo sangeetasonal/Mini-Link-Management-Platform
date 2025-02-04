@@ -173,6 +173,7 @@ const hashLongUrl = (longUrl) => {
 
 
 // Create a short URL
+// Create a short URL
 exports.createShortUrl = async (req, res) => {
   const { longUrl, remarks, expirationDate } = req.body;
   const userId = req.user?.userId;
@@ -187,8 +188,10 @@ exports.createShortUrl = async (req, res) => {
 
   try {
     const hashedUrl = hashLongUrl(longUrl);
-    const shortUrl = `${process.env.BASE_URL}/${hashedUrl}`; // Use BASE_URL from environment variables
-    console.log("Creating Short URL:", shortUrl); // Log the short URL being created
+    const shortUrl = `${process.env.BASE_URL}/${hashedUrl}`; // Ensure there's only one slash
+
+    // Log the short URL for debugging
+    console.log("Generated Short URL:", shortUrl);
 
     const newShortUrl = new Url({
       longUrl,
@@ -214,15 +217,13 @@ exports.createShortUrl = async (req, res) => {
     res.status(500).json({ message: 'Error creating short URL', error: err.message });
   }
 };
-
 // Handle redirection
 exports.handleRedirect = async (req, res) => {
-  const { shortId } = req.params;
-  console.log("Received request for shortId:", shortId); // Log the incoming shortId
-
+  const { shortId } = req.params; // Extract the shortId from the request parameters
   const shortUrl = `${process.env.BASE_URL}/${shortId}`; // Construct the full short URL
+
   console.log("Incoming shortId:", shortId); // Log the incoming shortId
-  console.log("Constructed shortUrl:", shortUrl); // Log the constructed shortUrl
+  console.log("Constructed shortUrl for lookup:", shortUrl); // Log the constructed shortUrl
 
   try {
     // Find the URL associated with the short URL
@@ -241,21 +242,6 @@ exports.handleRedirect = async (req, res) => {
     // Increment the click count
     url.clicks += 1;
 
-    // Store IP address and device information
-    let ipAddress = req.ip;
-
-    // Convert IPv6 localhost (::1) to IPv4 (127.0.0.1)
-    if (ipAddress === '::1') {
-      ipAddress = '127.0.0.1';
-    }
-
-    const userAgent = req.headers['user-agent'];
-    const device = getDevice(userAgent);
-
-    // Log the IP address and device information
-    url.ipAddress = ipAddress; // Update IP address
-    url.device = device; // Update device
-
     // Save the updated URL document
     await url.save();
 
@@ -266,9 +252,6 @@ exports.handleRedirect = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
-
-
-
 // Function to get device from user agent
 function getDevice(userAgent) {
   if (userAgent.includes('Android')) return 'Android';

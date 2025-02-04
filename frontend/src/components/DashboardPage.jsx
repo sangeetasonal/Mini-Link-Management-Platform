@@ -71,6 +71,7 @@ const DashboardPage = () => {
   const [showPopup, setShowPopup] = useState(false); 
   const [editLinkId, setEditLinkId] = useState(null); 
   const [originalLink, setOriginalLink] = useState(""); 
+  const [previousEmail, setPreviousEmail] = useState(""); // Track previous email
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [sortOrder, setSortOrder] = useState('asc'); // For date sorting
   const [statusFilter, setStatusFilter] = useState(null); // For filtering by status
@@ -79,89 +80,105 @@ const DashboardPage = () => {
   desktop: 0,
   tablet: 0,
 });
-  useEffect(() => {
-    // Fetch the username from localStorage
-    const savedName = localStorage.getItem('username');
-    if (savedName) {
-      setUserName(savedName);
-    } else {
-      // Redirect to login if username is not found
-      navigate('/login'); // Use React Router for redirection
-      return;
-    }
+  
+useEffect(() => {
+  // Fetch the username and email from localStorage
+  const savedName = localStorage.getItem('username');
+  const savedEmail = localStorage.getItem('email'); // Assuming you store email in localStorage
+  if (savedName) {
+    setUserName(savedName);
+  } else {
+    navigate('/login'); // Redirect to login if username is not found
+    return;
+  }
 
-    const fetchUserData = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          console.log("No token found in localStorage");
-          return;
-        }
-  
-        console.log("Fetching user details with token:", token);
-  
-        const response = await axios.get('https://mini-link-management-platform-lwxs.onrender.com/api/auth/details', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        console.log("Response data:", response.data); 
-        
-        if (response.status === 200) {
-          setUserName(response.data.user.name); 
-          setUserMobile(response.data.user.mobile); 
-          setUserEmail(response.data.user.email); 
-        }
-      } catch (error) {
-        console.error('Error fetching user details:', error);
-        navigate('/login'); 
-      }
-    };
-  
-    fetchUserData();
-    const date = new Date();
-    const formattedDate = date.toLocaleDateString('en-US', {
-      weekday: 'short', // Abbreviated day
-      month: 'short', // Abbreviated month
-      day: 'numeric' // Numeric day
-    });
-    setCurrentDate(formattedDate); 
-  }, [navigate]);
+  if (savedEmail) {
+    setUserEmail(savedEmail);
+    setPreviousEmail(savedEmail); // Set the initial previous email
+  }
 
-   
-
-  const handleSaveChanges = async (e) => {
-    e.preventDefault();
-  
-    // Simple validation to ensure fields are not empty
-    if (!userName || !userEmail || !userMobile) {
-      alert("Please fill in all fields before saving.");
-      return;
-    }
-  
+  const fetchUserData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.put(
-        'https://mini-link-management-platform-lwxs.onrender.com/api/auth/update', 
-        {
-          name: userName.trim() || 'defaultName', 
-          email: userEmail.trim() || 'default@example.com', 
-          mobile: userMobile.trim() || '0000000000', 
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-  
+      if (!token) {
+        console.log("No token found in localStorage");
+        return;
+      }
+
+      const response = await axios.get('https://mini-link-management-platform-lwxs.onrender.com/api/auth/details', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
       if (response.status === 200) {
-        console.log('User details updated:', response.data);
-        toast.success('Details updated successfully'); // Show success toast
+        setUserName(response.data.user.name); 
+        setUserMobile(response.data.user.mobile); 
+        setUserEmail(response.data.user.email); 
+        setPreviousEmail(response.data.user.email); // Set the previous email from response
       }
     } catch (error) {
-      console.error('Error updating user details:', error);
-      toast.error('Error updating details'); // Show error toast
+      console.error('Error fetching user details:', error);
+      navigate('/login'); 
     }
   };
+
+  fetchUserData();
+  const date = new Date();
+  const formattedDate = date.toLocaleDateString('en-US', {
+    weekday: 'short', // Abbreviated day
+    month: 'short', // Abbreviated month
+    day: 'numeric' // Numeric day
+  });
+  setCurrentDate(formattedDate); 
+}, [navigate]);
+
+const handleSaveChanges = async (e) => {
+  e.preventDefault();
+
+  // Simple validation to ensure fields are not empty
+  if (!userName || !userEmail || !userMobile) {
+    alert("Please fill in all fields before saving.");
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await axios.put(
+      'https://mini-link-management-platform-lwxs.onrender.com/api/auth/update', 
+      {
+        name: userName.trim() || 'defaultName', 
+        email: userEmail.trim() || 'default@example.com', 
+        mobile: userMobile.trim() || '0000000000', 
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (response.status === 200) {
+      console.log('User  details updated:', response.data);
+      toast.success('Details updated successfully'); // Show success toast
+
+      // Check if the email has changed
+      if (userEmail !== previousEmail) {
+        handleLogout(); // Call logout if email has changed
+      }
+    }
+  } catch (error) {
+    console.error('Error updating user details:', error);
+    toast.error('Error updating details'); // Show error toast
+  }
+};
+
+const handleLogout = () => {
+  localStorage.removeItem('token'); // Clear token
+  localStorage.removeItem('username'); // Clear username
+  localStorage.removeItem('email'); // Clear email
+  navigate('/login'); // Redirect to login
+};
+
+
   const getInitials = (name) => {
     if (!name) return ""; // Ensure name exists
     const nameParts = name.split(" ");
@@ -306,11 +323,6 @@ const handleProfileSelect = () => {
   setIsProfileSelected(prevState => !prevState); // Toggle profile selection
 };
 
-const handleLogout = () => {
-  localStorage.removeItem('token'); // Clear token
-  setIsProfileSelected(false); // Reset profile selection
-  navigate('/login'); // Redirect to login
-};
 
 // Hide logout button when clicking outside
 const handleClickOutside = (event) => {

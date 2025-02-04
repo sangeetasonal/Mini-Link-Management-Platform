@@ -21,7 +21,6 @@ body, html {
     padding:20px 20px 20px 10px;
     height: 100vw;
     transition: transform 0.3s ease; /* Smooth transition for showing/hiding */
-    z-index: 1000; /* Ensure the sidebar is above other elements */
     position: fixed; /* Fixed position */
 
   }
