@@ -810,7 +810,7 @@ table.links-table {
 .pagination button.disabled {
   background-color: grey; /* Grey color for disabled state */
   cursor: not-allowed; /* Change cursor to indicate disabled */
-  opacity: 0.6; /* Slightly transparent */
+  
 }
 
 .pagination button:hover:not(.disabled) {
